@@ -8,7 +8,7 @@ from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from IPython import embed
 
-table_name = 'movies-apper2'
+table_name = '<YOUR-TABLE-NAME-HERE>'
 dynamodb = boto3.resource('dynamodb')
 
 
