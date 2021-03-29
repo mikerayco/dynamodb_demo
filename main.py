@@ -1,3 +1,4 @@
+import time
 from decimal import Decimal
 import json
 from pprint import pprint
@@ -7,7 +8,7 @@ from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from IPython import embed
 
-table_name = ''
+table_name = 'movies-apper2'
 dynamodb = boto3.resource('dynamodb')
 
 
@@ -41,7 +42,8 @@ def create_movie_table():
             'WriteCapacityUnits': 10
         }
     )
-    return table
+    print(f"Table Status : {table.table_status}")
+    return None
 
 
 # load data to table
@@ -86,6 +88,24 @@ def get_movie(title, year):
         return response['Item']
 
 
+def update_movie(title, year, rating, plot, actors: list):
+    table = dynamodb.Table(table_name)
+    response = table.update_item(
+        Key={
+            'year': year,
+            'title': title
+        },
+        UpdateExpression="set info.rating=:r, info.plot=:p, info.actors=:a",
+        ExpressionAttributeValues={
+            ':r': Decimal(rating),
+            ':p': plot,
+            ':a': actors
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+    return response
+
+
 # conditional update
 def remove_actors(title, year, actor_count):
     table = dynamodb.Table(table_name)
@@ -97,7 +117,7 @@ def remove_actors(title, year, actor_count):
                 'title': title
             },
             UpdateExpression="remove info.actors[0]",
-            ConditionExpression="size(info.actors) > :num",
+            ConditionExpression="size(info.actors) >= :num",
             ExpressionAttributeValues={':num': actor_count},
             ReturnValues="UPDATED_NEW"
         )
@@ -144,7 +164,7 @@ def query_movies(year):
 
 
 # scan function
-def scan_movies(year_range):
+def scan_movies(year_range: tuple):
     table = dynamodb.Table(table_name)
     scan_kwargs = {
         'FilterExpression': Key('year').between(*year_range),
